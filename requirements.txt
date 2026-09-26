@@ -3,3 +3,6 @@ xxhash
 datasets
 pyarrow
 numpy
+regex
+tokenizers
+huggingface_hub
