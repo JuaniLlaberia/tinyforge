@@ -70,7 +70,6 @@ class TokenizerConfig:
     vocab_path: Path = Path("tokenizer/trained_tokenizer/vocab.json")
     merges_path: Path = Path("tokenizer/trained_tokenizer/merges.txt")
 
-    # Step 6: encode + shard
     eot_id: int = 256
     shard_tokens: int = 100_000_000
     shards_path: Path = Path("data/dataset/shards")
