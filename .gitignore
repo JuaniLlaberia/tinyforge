@@ -1,0 +1,6 @@
+/.venv/*
+.env
+data/dataset/*
+data/local_models/*
+__pycache__
+.DS_Store
