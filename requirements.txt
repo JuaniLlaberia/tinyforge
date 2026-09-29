@@ -6,3 +6,5 @@ numpy
 regex
 tokenizers
 huggingface_hub
+torch
+wandb
