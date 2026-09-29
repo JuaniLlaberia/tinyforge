@@ -57,8 +57,6 @@ class DataConfig:
 
 @dataclass
 class TokenizerConfig:
-    """
-    """
     vocab_size: int = 8192
     special_tokens: tuple[str, ...] = ("<|endoftext|>", "<|assistant|>", "<|user|>", "<|endofturn|>")
 
@@ -73,3 +71,58 @@ class TokenizerConfig:
     eot_id: int = 256
     shard_tokens: int = 100_000_000
     shards_path: Path = Path("data/dataset/shards")
+
+# Experiments
+class XSModelConfig:
+    n_layer: int = 6
+    d_model: int = 256
+    n_head: int = 4
+    d_ff: int = 704
+    context_length: int = 1024
+    theta: float = 10000.0
+
+class SmallModelConfig:
+    n_layer: int = 8
+    d_model: int = 384
+    n_head: int = 6
+    d_ff: int = 1024
+    context_length: int = 1024
+    theta: float = 10000.0
+
+class MidModelConfig:
+    n_layer: int = 10
+    d_model: int = 512
+    n_head: int = 8
+    d_ff: int = 1344
+    context_length: int = 1024
+    theta: float = 10000.0
+
+# Final Base Model Configuration
+class Base60MModelConfig:
+    n_layer: int = 12
+    d_model: int = 640
+    n_head: int = 10
+    d_ff: int = 1728
+    context_length: int = 1024
+    theta: float = 10000.0
+
+MODEL_PRESETS = {
+    "xs": XSModelConfig,
+    "s": SmallModelConfig,
+    "m": MidModelConfig,
+    "base60m": Base60MModelConfig,
+}
+
+class TrainConfig:
+    peak_lr_adamw: float = 2e-3
+    peak_lr_muon: float = 2e-2
+    weight_decay: float = 0.1
+    betas: tuple[float, float] = (0.9, 0.95)
+    grad_clip: float = 1.0
+    warmup_frac: float = 0.01
+    wsd_decay_frac: float = 0.175
+    cosine_min_lr_frac: float = 0.10
+    tokens_per_step: int = 256_000
+    val_interval: int = 100
+    ckpt_interval: int = 500
+    num_val_windows: int = 512
