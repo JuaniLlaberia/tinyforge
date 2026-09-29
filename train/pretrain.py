@@ -40,22 +40,33 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--overfit-batch", action="store_true")
     parser.add_argument("--seed", type=int, default=GlobalConfig.seed)
     parser.add_argument("--ckpt-dir", type=str, default="checkpoints")
+    parser.add_argument("--run-name", type=str, default=None)
     return parser.parse_args()
 
+def resolve_run_name(args: argparse.Namespace) -> str:
+    """Namespaces checkpoints per run (locally and on the HF Hub) so multiple
+    experiments pushed to the same --hf-repo-id don't overwrite each other's
+    same-numbered steps."""
+    return args.run_name or f"{args.preset}-{args.optim}-{args.sched}-seed{args.seed}"
+
 def resolve_checkpoint_source(resume_from: str) -> Path:
-    """Local path if it exists on disk, else treated as '<hf_repo_id>/<filename>'."""
+    """Local path if it exists on disk, else '<owner>/<repo>/<run_name>/<filename>'
+    on the HF Hub -- repo_id is always exactly the first two '/'-separated segments,
+    everything after that is the path within the repo."""
     local_path = Path(resume_from)
     if local_path.exists():
         return local_path
-    repo_id, filename = resume_from.rsplit("/", 1)
+    parts = resume_from.split("/")
+    repo_id, filename = "/".join(parts[:2]), "/".join(parts[2:])
     return Path(hf_hub_download(repo_id=repo_id, filename=filename))
 
-def push_checkpoint_to_hub(ckpt_path: Path, hf_repo_id: str | None) -> None:
-    """Best-effort push; never hard-fails a local run with no HF auth configured."""
+def push_checkpoint_to_hub(ckpt_path: Path, hf_repo_id: str | None, run_name: str) -> None:
+    """Best-effort push, namespaced under run_name; never hard-fails a local run
+    with no HF auth configured."""
     if not hf_repo_id:
         return
     try:
-        upload_file(path_or_fileobj=str(ckpt_path), path_in_repo=ckpt_path.name, repo_id=hf_repo_id)
+        upload_file(path_or_fileobj=str(ckpt_path), path_in_repo=f"{run_name}/{ckpt_path.name}", repo_id=hf_repo_id)
     except Exception as e:
         print(f"Warning: failed to push checkpoint to HF Hub: {e}")
 
@@ -94,9 +105,9 @@ def sample_fixed_prompts(model, tokenizer, device, context_length: int, eot_id: 
 def train_loop(
     model, optimizers, schedulers, scaler, loader: DataLoader, tokenizer, args,
     preset, device, amp_dtype, amp_enabled: bool, start_step: int, total_steps: int,
-    tokens_per_step: int, wandb_run_id: str,
+    tokens_per_step: int, wandb_run_id: str, run_name: str,
 ) -> None:
-    ckpt_dir = Path(args.ckpt_dir)
+    ckpt_dir = Path(args.ckpt_dir) / run_name
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
     vocab_size = TokenizerConfig.vocab_size
@@ -176,7 +187,7 @@ def train_loop(
             ckpt_path = ckpt_dir / f"step_{step:07d}.pt"
             save_checkpoint(model, optimizers, step, ckpt_path, scaler=scaler,
                              data_loader_rng_state=loader.state_dict(), wandb_run_id=wandb_run_id)
-            push_checkpoint_to_hub(ckpt_path, args.hf_repo_id)
+            push_checkpoint_to_hub(ckpt_path, args.hf_repo_id, run_name)
 
             rows = sample_fixed_prompts(model, tokenizer, device, preset.context_length, TokenizerConfig.eot_id)
             wandb.log({"tokens_seen": tokens_seen, "samples": wandb.Table(columns=["prompt", "completion"], data=rows)})
@@ -184,6 +195,7 @@ def train_loop(
 def main() -> None:
     args = parse_args()
     preset = MODEL_PRESETS[args.preset]
+    run_name = resolve_run_name(args)
     torch.manual_seed(args.seed)
 
     amp_dtype, needs_scaler = detect_precision()
@@ -238,7 +250,8 @@ def main() -> None:
         for name, opt in optimizers.items()
     }
 
-    wandb.init(project=args.wandb_project, id=wandb_run_id, resume="allow" if wandb_run_id else None, config=vars(args))
+    wandb.init(project=args.wandb_project, name=run_name, id=wandb_run_id,
+               resume="allow" if wandb_run_id else None, config=vars(args))
     wandb_run_id = wandb.run.id
     wandb.define_metric("tokens_seen")
     wandb.define_metric("*", step_metric="tokens_seen")
@@ -246,7 +259,7 @@ def main() -> None:
     tokenizer = build_hf_tokenizer()
 
     train_loop(model, optimizers, schedulers, scaler, loader, tokenizer, args, preset, device,
-               amp_dtype, amp_enabled, start_step, total_steps, tokens_per_step, wandb_run_id)
+               amp_dtype, amp_enabled, start_step, total_steps, tokens_per_step, wandb_run_id, run_name)
 
 if __name__ == "__main__":
     main()

@@ -115,7 +115,7 @@ MODEL_PRESETS = {
 
 class TrainConfig:
     peak_lr_adamw: float = 2e-3
-    peak_lr_muon: float = 2e-2
+    peak_lr_muon: float = 1e-3
     weight_decay: float = 0.1
     betas: tuple[float, float] = (0.9, 0.95)
     grad_clip: float = 1.0
