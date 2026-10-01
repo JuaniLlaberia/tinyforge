@@ -1,0 +1,20 @@
+# TinyForge
+optimizer: muon
+schedule: wsd
+
+warmup_frac: 0.01
+decay_frac: 0.175
+
+# Three short (~200-step) calibration runs at full base60m size, before the long run.
+lr_sweep_range_2c:
+  - 2.0e-3
+  - 3.0e-3
+  - 4.0e-3
+
+final_size: base60m # 12 layers, d_model=640, n_head=10, d_ff=1728, ~59.5M non-embedding params
+final_tokens: 2500000000
+
+source_experiments:
+  optimizer_decision: "Experiment A -- Muon beat AdamW by 1.011 nats, far beyond the ~0.072-nat noise floor"
+  schedule_decision: "Experiment B -- WSD beat cosine by 0.166 nats"
+  scaling_check: "Experiment C -- loss ~ N^-0.16 across xs/s/m, confirms base60m direction, not a precise prediction"
