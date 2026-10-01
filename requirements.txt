@@ -8,3 +8,4 @@ tokenizers
 huggingface_hub
 torch
 wandb
+lm_eval>=0.4,<0.5
