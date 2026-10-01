@@ -1,0 +1,31 @@
+{
+  "val_loss": 2.7161018550395966,
+  "val_perplexity": 15.121262335129572,
+  "lm_eval_results": {
+    "hellaswag": {
+      "name": "hellaswag",
+      "alias": "hellaswag",
+      "sample_len": 10042,
+      "acc,none": 0.28649671380203146,
+      "acc_stderr,none": 0.00451200245975772,
+      "acc_norm,none": 0.30651264688309104,
+      "acc_norm_stderr,none": 0.0046010291884587915
+    },
+    "arc_easy": {
+      "name": "arc_easy",
+      "alias": "arc_easy",
+      "sample_len": 2376,
+      "acc,none": 0.468013468013468,
+      "acc_stderr,none": 0.010238767643185735,
+      "acc_norm,none": 0.4145622895622896,
+      "acc_norm_stderr,none": 0.010108889212447719
+    }
+  },
+  "checkpoint": "Juanillaberia/TinyForge-60M/base60m-pretrain/step_0009535.pt",
+  "preset": "base60m",
+  "tasks": [
+    "hellaswag",
+    "arc_easy"
+  ],
+  "limit": null
+}
