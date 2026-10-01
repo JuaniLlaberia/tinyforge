@@ -5,11 +5,13 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 import wandb
-from huggingface_hub import hf_hub_download, upload_file
+from huggingface_hub import upload_file
 
 from config import GlobalConfig, TokenizerConfig, TrainConfig, MODEL_PRESETS
 from data.progress import format_duration
 from model.model import TransformerLM, save_checkpoint, load_checkpoint
+from model.generate import greedy_generate
+from model.helper.checkpoint_source import resolve_checkpoint_source
 from model.helper.data_loader import DataLoader
 from model.helper.precision import detect_precision
 from model.optim import build_optimizers
@@ -44,24 +46,15 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 def resolve_run_name(args: argparse.Namespace) -> str:
-    """Namespaces checkpoints per run (locally and on the HF Hub) so multiple
+    """
+    Namespaces checkpoints per run (locally and on the HF Hub) so multiple
     experiments pushed to the same --hf-repo-id don't overwrite each other's
     same-numbered steps."""
     return args.run_name or f"{args.preset}-{args.optim}-{args.sched}-seed{args.seed}"
 
-def resolve_checkpoint_source(resume_from: str) -> Path:
-    """Local path if it exists on disk, else '<owner>/<repo>/<run_name>/<filename>'
-    on the HF Hub -- repo_id is always exactly the first two '/'-separated segments,
-    everything after that is the path within the repo."""
-    local_path = Path(resume_from)
-    if local_path.exists():
-        return local_path
-    parts = resume_from.split("/")
-    repo_id, filename = "/".join(parts[:2]), "/".join(parts[2:])
-    return Path(hf_hub_download(repo_id=repo_id, filename=filename))
-
 def push_checkpoint_to_hub(ckpt_path: Path, hf_repo_id: str | None, run_name: str) -> None:
-    """Best-effort push, namespaced under run_name; never hard-fails a local run
+    """
+    Best-effort push, namespaced under run_name; never hard-fails a local run
     with no HF auth configured."""
     if not hf_repo_id:
         return
@@ -84,21 +77,10 @@ def evaluate(model, loader: DataLoader, batch_size: int, device, amp_dtype, amp_
     return sum(losses) / len(losses)
 
 @torch.no_grad()
-def sample_fixed_prompts(model, tokenizer, device, context_length: int, eot_id: int, max_new_tokens: int = 40) -> list[list[str]]:
-    """Naive greedy decode, no KV cache (that's a 2.d item)."""
+def sample_fixed_prompts(model, tokenizer, context_length: int, eot_id: int, max_new_tokens: int = 40) -> list[list[str]]:
     model.eval()
-    rows = []
-    for prompt in FIXED_PROMPTS:
-        ids = tokenizer.encode(prompt).ids
-        for _ in range(max_new_tokens):
-            window = ids[-context_length:]
-            inputs = torch.tensor([window], dtype=torch.long, device=device)
-            logits = model(inputs)
-            next_id = int(logits[0, -1].argmax())
-            ids.append(next_id)
-            if next_id == eot_id:
-                break
-        rows.append([prompt, tokenizer.decode(ids)])
+    rows = [[prompt, greedy_generate(model, tokenizer, prompt, context_length, eot_id, max_new_tokens)]
+            for prompt in FIXED_PROMPTS]
     model.train()
     return rows
 
@@ -189,7 +171,7 @@ def train_loop(
                              data_loader_rng_state=loader.state_dict(), wandb_run_id=wandb_run_id)
             push_checkpoint_to_hub(ckpt_path, args.hf_repo_id, run_name)
 
-            rows = sample_fixed_prompts(model, tokenizer, device, preset.context_length, TokenizerConfig.eot_id)
+            rows = sample_fixed_prompts(model, tokenizer, preset.context_length, TokenizerConfig.eot_id)
             wandb.log({"tokens_seen": tokens_seen, "samples": wandb.Table(columns=["prompt", "completion"], data=rows)})
 
 def main() -> None:
@@ -202,8 +184,6 @@ def main() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     amp_enabled = amp_dtype != torch.float32
 
-    # Model weights always start in fp32; autocast handles bf16/fp16 compute during
-    # the forward pass, which is required for fp16+GradScaler's numerics to be stable.
     model = TransformerLM(
         vocab_size=TokenizerConfig.vocab_size,
         context_length=preset.context_length,
@@ -236,13 +216,6 @@ def main() -> None:
         loader.load_state_dict(bookkeeping["data_loader_rng_state"])
         wandb_run_id = bookkeeping["wandb_run_id"]
 
-    # PyTorch's LambdaLR always applies lr_lambda(last_epoch + 1) at construction (a
-    # plain .step() bump), including for the last_epoch=-1 default (-1 + 1 = 0). So to
-    # make the upcoming step `start_step` use lr_lambda(start_step), as it would have in
-    # an uninterrupted run, we must pass last_epoch=start_step-1 -- which also happens to
-    # equal -1 for a fresh run (start_step=0), giving the correct default behavior for
-    # free. A resumed run's start_step-1 >= 0 requires 'initial_lr' already present in
-    # the optimizer's param groups, which load_checkpoint's restored state provides.
     schedulers = {
         name: build_scheduler(args.sched, opt, total_steps, warmup_frac=TrainConfig.warmup_frac,
                                decay_frac=TrainConfig.wsd_decay_frac, min_lr_frac=TrainConfig.cosine_min_lr_frac,

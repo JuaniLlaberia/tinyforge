@@ -1,0 +1,17 @@
+[
+  {"id": "general-01", "category": "general_knowledge", "prompt": "The capital of France is"},
+  {"id": "general-02", "category": "general_knowledge", "prompt": "The largest planet in the solar system is"},
+  {"id": "general-03", "category": "general_knowledge", "prompt": "Water is made of hydrogen and"},
+  {"id": "history-01", "category": "general_knowledge", "prompt": "The history of the Roman Empire began"},
+  {"id": "reasoning-01", "category": "reasoning", "prompt": "If a train leaves the station at 3pm and travels for 2 hours, it arrives at"},
+  {"id": "reasoning-02", "category": "reasoning", "prompt": "Two plus two equals"},
+  {"id": "reasoning-03", "category": "reasoning", "prompt": "If all cats are animals, and Whiskers is a cat, then Whiskers is"},
+  {"id": "code-01", "category": "code", "prompt": "def fibonacci(n):"},
+  {"id": "code-02", "category": "code", "prompt": "def is_even(n):\n    return"},
+  {"id": "code-03", "category": "code", "prompt": "# Function to reverse a string\ndef reverse_string(s):"},
+  {"id": "writing-01", "category": "writing", "prompt": "Once upon a time, in a small village,"},
+  {"id": "writing-02", "category": "writing", "prompt": "The weather today is"},
+  {"id": "writing-03", "category": "writing", "prompt": "My favorite hobby is"},
+  {"id": "research-01", "category": "research", "prompt": "A transformer model works by"},
+  {"id": "research-02", "category": "research", "prompt": "The difference between supervised and unsupervised learning is"}
+]
