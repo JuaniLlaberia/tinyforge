@@ -4,6 +4,7 @@ import math
 from pathlib import Path
 
 import torch
+from tqdm import tqdm
 
 import lm_eval
 from lm_eval.api.model import LM
@@ -79,7 +80,7 @@ class TinyForgeLM(LM):
     @torch.no_grad()
     def loglikelihood(self, requests: list) -> list[tuple[float, bool]]:
         results = []
-        for req in requests:
+        for req in tqdm(requests, desc="loglikelihood (no batching)"):
             context, continuation = req.args
             continuation_ids = self._encode(continuation)
             if not continuation_ids:
