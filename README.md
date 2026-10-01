@@ -20,7 +20,7 @@ is tracked in [`documentation/guide-remaining.md`](documentation/guide-remaining
 | `configs/model.yaml` | The locked 2.c recipe (optimizer, schedule, size, token budget) |
 | `eval/` | Domain-eval prompt set and results |
 | `documentation/` | Per-part writeup, guides, HF model card |
-| `EXPERIMENTS.md` | Small-scale experiment results and decisions (2.b), final pretraining results (2.c) |
+| `train/results/EXPERIMENTS.md` | Small-scale experiment results and decisions (2.b), final pretraining results (2.c) |
 | `run_commands.md` | Exact CLI invocations used for every experiment and the final run |
 
 ## Running it
@@ -51,6 +51,5 @@ python -m model.domain_eval --checkpoint <HF_REPO_ID>/<run_name>/step_XXXXXXX.pt
 ## More detail
 
 - [`documentation/writeup.md`](documentation/writeup.md) — the full technical narrative, Part 1 and Part 2
-- [`EXPERIMENTS.md`](EXPERIMENTS.md) — every experiment's config, results and decision
+- [`train/results/EXPERIMENTS.md`](train/results/EXPERIMENTS.md) — every experiment's config, results and decision
 - [`documentation/guide-remaining.md`](documentation/guide-remaining.md) — what's left (2.d: SFT, inference, release)
-- [`documentation/model_card_TinyForge-60M.md`](documentation/model_card_TinyForge-60M.md) — the HF Hub model card

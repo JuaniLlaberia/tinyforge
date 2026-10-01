@@ -135,7 +135,7 @@ killed run resumes to the identical step, LR and loss; param counts for every pr
 ## 2.b Experiments
 
 Four questions answered at small scale before committing compute to the real run (full tables, plots
-and decisions in `EXPERIMENTS.md`):
+and decisions in `train/results/EXPERIMENTS.md`):
 
 | Experiment | Question | Decision |
 |---|---|---|

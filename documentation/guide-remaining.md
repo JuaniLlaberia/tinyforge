@@ -5,7 +5,7 @@ Oct 1, 2026 · @Juan Ignacio Llaberia
 Replaces `guide-part2.md` and `guide-part2-revised.md`, both now executed through 2.c. This guide
 covers only what's still open: finishing 2.c's release, and all of 2.d.
 
-Full history of how the recipe was chosen lives in `EXPERIMENTS.md`; the Part 2 pretraining results
+Full history of how the recipe was chosen lives in `train/results/EXPERIMENTS.md`; the Part 2 pretraining results
 (val perplexity 15.12, HellaSwag/ARC-Easy, domain-eval baseline) are written up in
 `documentation/writeup.md`.
 
