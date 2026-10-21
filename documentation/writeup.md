@@ -50,7 +50,7 @@ Train count through the pipeline:
 | Exact dedup | 2,861,770 | -34,356 |
 | MinHash near-dedup | 2,846,154 | -15,616 |
 
-Val stayed at 14,542 through both dedup stages. Zero val docs were dropped, because the split-aware dedup rule always drops the train copy of a train/val duplicate and keeps val untouched. This is what prevents train/val leakage.
+Val went from 14,543 to 14,542: exact dedup removed one val doc that duplicated another val doc. No val doc was ever dropped in favor of a train copy, because the split-aware dedup rule always drops the train copy of a train/val duplicate and keeps val untouched. This is what prevents train/val leakage.
 
 ## Tokenizer
 
@@ -83,7 +83,7 @@ Note: EOT id is 256 (`special_tokens[0]`, right after the 256 raw bytes). This i
 
 ### Upload and verification
 
-Uploaded to the private HF Hub dataset repo `Juanillaberia/TinyForge`: train shards, val shard, `meta.json`, `stats.json`. 41 files total, about 6.5GB.
+Uploaded to the HF Hub dataset repo `Juanillaberia/TinyForge` (private at first, now public): train shards, val shard, `meta.json`, `stats.json`. 41 files total, about 6.5GB.
 
 Verified by downloading `vocab.json`, `merges.txt`, `meta.json`, and 3 shards (2 train, 1 val) fresh from the Hub into a scratch dir, building a tokenizer purely from those downloaded files, and decoding 5 random 400-token windows. All were real, coherent FineWeb-Edu text.
 
@@ -148,9 +148,11 @@ Recipe locked into `configs/model.yaml`: Muon + WSD, `base60m`, 2.5B tokens.
 
 ## 2.c Pretraining — TinyForge-60M
 
-**Full-size LR sweep**: three ~200-step calibration runs at `base60m`, starting at 2e-3/3e-3/4e-3
-and extending to 6e-3/8e-3 once gains kept coming without a loss spike. Winner: **lr=8e-3** — the
-last increment's gain (+0.072 nats) had decelerated into the Experiment 0 noise band.
+**Full-size LR sweep**: ~200-step calibration runs at `base60m`. The planned range was 2e-3–4e-3
+(`configs/model.yaml`); since every increase kept improving without a loss spike, the sweep was
+extended upward, and the recorded runs are 4e-3 / 6e-3 / 8e-3 (val loss 4.349 / 4.187 / 4.115).
+Winner: **lr=8e-3** — the last increment's gain (+0.072 nats) had decelerated into the Experiment 0
+noise band.
 
 **The long run**: Muon, WSD, lr=8e-3, 262,144 tokens/step (micro-batch 32 × grad-accum 8 × 1,024
 context), 9,535 steps ≈ 2.5B tokens.
@@ -272,7 +274,14 @@ rather than lost knowledge.
 
 ## Where We Are Now (Part 2)
 
-2.a–2.c are done and `TinyForge-60M` is public on the HF Hub. In 2.d, SFT is done: `sft-50k`
-epoch 3 is chosen for `TinyForge-60M-Instruct` (checkpoints are in a private HF repo). What's left:
-the weights-only upload and model card, then inference (KV cache, sampling, CLI chat) and
-`REPORT.md` — see `documentation/guide-remaining.md`.
+2.a–2.d are done, and everything is on the HF Hub with model and dataset cards:
+[TinyForge-60M](https://huggingface.co/Juanillaberia/TinyForge-60M),
+[TinyForge-60M-Instruct](https://huggingface.co/Juanillaberia/TinyForge-60M-Instruct) (`sft-50k`
+epoch 3, weights only; the training checkpoints of both SFT runs sit in the same repo under
+`sft-50k/` and `sft-2k/`), and the data at
+[Juanillaberia/TinyForge](https://huggingface.co/datasets/Juanillaberia/TinyForge). Estimated compute
+for 2.d: ~4 CU (both SFT runs, the smoke run and the benchmark pass).
+
+Future work, in `documentation/guide-remaining.md`: KV-cache inference with a tokens/sec benchmark,
+sampling (temperature, top-p, repetition penalty — the obvious next fix for the loops that SFT
+reduced but didn't remove), a CLI chat, and `REPORT.md`.
