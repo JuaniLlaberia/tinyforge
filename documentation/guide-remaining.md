@@ -1,9 +1,10 @@
 # TinyForge — what's left
 
-Oct 1, 2026 · @Juan Ignacio Llaberia · SFT plan added Oct 21, 2026
+Oct 1, 2026 · @Juan Ignacio Llaberia · SFT plan added Oct 21, 2026 · 2.d closed Oct 21, 2026
 
 Replaces `guide-part2.md` and `guide-part2-revised.md`, both now executed through 2.c. This guide
-covers only what's still open: finishing 2.c's release, and all of 2.d.
+covered finishing 2.c's release and all of 2.d. **Status (Oct 21): both are done.** Inference
+(KV cache, sampling, CLI chat) and `REPORT.md` were moved to [Future work](#future-work).
 
 Full history of how the recipe was chosen lives in `train/results/EXPERIMENTS.md`; the Part 2 pretraining results
 (val perplexity 15.12, HellaSwag/ARC-Easy, domain-eval baseline) are written up in
@@ -11,15 +12,17 @@ Full history of how the recipe was chosen lives in `train/results/EXPERIMENTS.md
 
 ## Finish 2.c — release TinyForge-60M
 
-`Juanillaberia/TinyForge-60M` is public with its model card and final checkpoint. Remaining fixes
-to the HF `README.md`:
+`Juanillaberia/TinyForge-60M` is public with its model card and final checkpoint. Fixes to the HF
+`README.md` (republished Oct 21):
 
-- [ ] Replace both `<GITHUB_REPO_URL>` placeholders with `https://github.com/JuaniLlaberia/tinyforge`.
-- [ ] Limitations: 2.5B tokens is ~2x *above* compute-optimal for this size, not "far below"; reword.
-- [ ] Peak LR row: make the sweep description match `EXPERIMENTS.md` (4e-3/6e-3/8e-3 table).
-- [ ] Commit the card as `documentation/model_card_TinyForge-60M.md` (README links to it), and
+- [x] Replace both `<GITHUB_REPO_URL>` placeholders with `https://github.com/JuaniLlaberia/tinyforge`.
+- [x] Limitations: 2.5B tokens is ~2x *above* compute-optimal for this size, not "far below"; reword.
+- [x] Peak LR row: make the sweep description match `EXPERIMENTS.md` (4e-3/6e-3/8e-3 table).
+- [x] Commit the card as `documentation/model_card_TinyForge-60M.md` (README links to it), and
       update `configs/model.yaml` with the final lr 8e-3.
-- [ ] Confirm the model loads cleanly from a fresh clone using the model card's own usage snippet.
+- [x] Confirm the model loads cleanly from a fresh clone using the model card's own usage snippet.
+- [x] Dataset card for `Juanillaberia/TinyForge` (it had none): `documentation/dataset_card_TinyForge.md`,
+      published as the dataset repo's `README.md`.
 
 ## 2.d Post-training and release → TinyForge-60M-Instruct
 
@@ -216,9 +219,9 @@ python -m train.push_to_hub --checkpoint Juanillaberia/TinyForge-60M-Instruct/sf
     15/15 answers identical to the Step 5 `sft-50k` rows (run locally on the Mac CPU, not Colab).
   - [x] The model card's usage snippet, run from the repo root against the Hub copy, prints the
     same Paris answer quoted in the card.
-  - [ ] The snippet from a **fresh clone**: the default branch `main` is still at `1dc0e01` and has
-    none of the SFT code (`chat_template.py`, `greedy_generate_ids`). Merge `dev` into `main` first.
-  - [ ] The repo stays private until you've reviewed the card; making it public is a manual step.
+  - [x] The snippet from a **fresh clone** of `main` (after merging `dev`, PR #1) prints the same
+    Paris answer.
+  - [x] The repo stays private until you've reviewed the card; making it public is a manual step.
 
 | Step | Where | CU |
 |---|---|---|
@@ -229,34 +232,41 @@ python -m train.push_to_hub --checkpoint Juanillaberia/TinyForge-60M-Instruct/sf
 | 6 upload + fresh-session check | Colab CPU | 0 |
 | **SFT total** | | **~3.5–6.5** |
 
-### Inference
+### Release
+
+- [x] `TinyForge-60M-Instruct` on the HF Hub (SFT Step 6), with its model card.
+
+## Done checklist (2.d)
+
+- [x] SFT model answers in chat format; base-vs-SFT table written
+- [x] `TinyForge-60M-Instruct` on the HF Hub, with model card; base model card fixed; dataset card added
+- [x] Results documented in `writeup.md` (2.d section) and `train/results/EXPERIMENTS.md`
+
+## Future work
+
+Moved out of 2.d on Oct 21, 2026, to close the release.
+
+**Inference**
 
 - [ ] No-cache generation as the baseline (already have this: `model/generate.py`'s
-      `greedy_generate`), then a per-layer KV cache. Confirm both produce identical greedy output.
+      `greedy_generate_ids`), then a per-layer KV cache. Confirm both produce identical greedy output.
       Needs a start-position argument in `TransformerLM.forward` (RoPE offsets), and a mask that
-      works when the query is shorter than the keys.
+      works when the query is shorter than the keys (`attention.py` builds a square `tril` mask today).
 - [ ] Benchmark tokens/sec with and without the cache, at a few sequence lengths.
 - [ ] Add temperature, top-p and repetition-penalty sampling; compare outputs on the same prompts —
-      this is also what fixes the repetition loops seen in the base model's domain-eval answers.
+      the obvious next fix for the loops SFT reduced but didn't remove (`sft-50k` still hits the token
+      limit on 10/15 domain-eval prompts).
 - [ ] A CLI chat loop that works from a fresh clone, built on `chat_template.encode_prompt`; Gradio
-      if time allows.
+      if time allows. Then point the Instruct card's usage snippet at it.
 
-### Release and report
+**Report**
 
-- [ ] `TinyForge-60M-Instruct` on the HF Hub (SFT Step 6). Once the KV cache and sampling land,
-      update its card's usage snippet to the CLI chat.
 - [ ] Write `REPORT.md` per PROJECT_DESIGN §9, with the 2.b experiments as their own section:
       questions, plots, decisions, and how they held up once scaled to `base60m`. Include the
-      `sft-2k` vs `sft-50k` ablation the same way.
+      `sft-2k` vs `sft-50k` ablation the same way. `documentation/writeup.md` already has most of
+      the material.
 
-## Done checklist
-
-- [ ] SFT model answers in chat format; base-vs-SFT table written
-- [ ] KV cache matches no-cache output, with a tokens/sec benchmark
-- [ ] CLI chat works from a fresh clone
-- [ ] `TinyForge-60M-Instruct` on the HF Hub; `REPORT.md` written
-
-## Stretch goals (only after 2.d)
+## Stretch goals
 
 1. High-quality data in a decay phase, tested at small scale first (the SmolLM2 idea) — would need
    its own short experiment before touching `base60m` again.

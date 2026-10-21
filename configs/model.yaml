@@ -6,10 +6,13 @@ warmup_frac: 0.01
 decay_frac: 0.175
 
 # Three short (~200-step) calibration runs at full base60m size, before the long run.
+# Planned range below; the sweep was extended upward (6e-3, 8e-3) while each step kept
+# improving without a loss spike -- see train/results/EXPERIMENTS.md, "LR sweep at full size".
 lr_sweep_range_2c:
   - 2.0e-3
   - 3.0e-3
   - 4.0e-3
+final_lr: 8.0e-3 # used for the 2.5B-token run (TinyForge-60M)
 
 final_size: base60m # 12 layers, d_model=640, n_head=10, d_ff=1728, ~59.5M non-embedding params
 final_tokens: 2500000000

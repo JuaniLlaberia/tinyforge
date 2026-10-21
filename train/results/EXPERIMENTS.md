@@ -65,7 +65,7 @@ clearly keeps improving with size at fixed tokens/param, no sign of diminishing 
 range. Per the guide, three points is a sanity check, not a prediction — this doesn't override the
 already-made base60m size decision, just confirms the direction is sound.
 
-**Decision:** Scaling direction confirms base60m is a reasonable choice; no change to the planned.
+**Decision:** Scaling direction confirms base60m is a reasonable choice; no change to the planned size.
 
 ---
 
