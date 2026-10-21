@@ -108,3 +108,40 @@ and weak factual/arithmetic grounding:
   States is Washington, D.C...." (evasive, never names Paris)
 - "Two plus two equals" → "...one. Then, the second equals one plus two...." (wrong, degenerates)
 - "def fibonacci(n):" → "...- Fibonacci(n):\n- Fibonacci(n):..." (no real code structure)
+
+---
+
+## Post-training
+
+### SFT data
+
+Built by `train/prepare_sft_data.py` from `HuggingFaceTB/smol-smoltalk` (seed 42), pushed to
+`Juanillaberia/TinyForge` under `sft/`. Full stats: `sft/stats.json`.
+
+Conversations longer than 1,024 input tokens are truncated at a turn boundary (longest prefix of
+complete user/assistant pairs that fits) and dropped only if the first pair alone doesn't fit. A
+585-conversation smoke run with plain dropping instead lost 49% of conversations and cut 3+-turn
+conversations from 59% to 26% (`smol-magpie-ultra-short`, 59% of the source, is mostly 3-turn chats
+over 1,024 tokens), so plain dropping was rejected.
+
+| Train pool outcome (51,387 examined) | Count | Share |
+|---|---|---|
+| Kept whole | 26,348 | 51.3% |
+| Truncated at a turn boundary | 23,652 | 46.0% |
+| Dropped: first pair too long | 1,384 | 2.7% |
+| Dropped: duplicate | 3 | <0.1% |
+| Dropped: malformed / special-token text | 0 | 0% |
+
+Truncation is almost entirely `smol-magpie-ultra-short` (77% of its conversations). Drops are mostly
+`longalign` (100%, by design of that source) and `smol-summarize-20k` (20%).
+
+| Split | Conversations | Tokens | Mean / median / p95 | Trained-token fraction | Turns 1 / 2 / 3+ |
+|---|---|---|---|---|---|
+| `train_main` (`sft-50k`) | 50,031 | 31.2M | 623 / 672 / 989 | 79.5% | 47% / 38% / 15% |
+| `train_ablation` (`sft-2k`) | 2,031 | 1.24M | 613 / 661 / 987 | 80.1% | 49% / 38% / 13% |
+| `heldout` (from `test`) | 1,000 | 0.61M | 609 / 639 / 984 | 79.4% | 51% / 36% / 13% |
+| Research prompts (in both train sets) | 31 | 3.7K | 120 / 116 / 187 | 86.4% | 94% / 6% / 0% |
+
+Source mix of `train_main` matches the full train split to within ~1.5 points per source
+(`smol-magpie-ultra-short` 60.2% vs 58.8%). No held-out conversation overlaps train or the research
+prompts (hash of the rendered conversation).

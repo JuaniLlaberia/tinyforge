@@ -126,3 +126,37 @@ class TrainConfig:
     val_interval: int = 100
     ckpt_interval: int = 500
     num_val_windows: int = 512
+
+@dataclass
+class SFTConfig:
+    # Data (documentation/guide-remaining.md, SFT locked decisions)
+    dataset: str = "HuggingFaceTB/smol-smoltalk"
+    preset: str = "base60m"
+    num_train: int = 50_000
+    num_ablation: int = 2_000
+    num_heldout: int = 1_000
+    research_prompts_path: Path = Path("data/sft/research_prompts.jsonl")
+    research_source: str = "tinyforge-research"
+    output_path: Path = Path("data/dataset/sft")
+    hub_path_in_repo: str = "sft"
+
+    # Output files inside output_path (and hub_path_in_repo)
+    train_main_file: str = "train_main.jsonl"
+    train_ablation_file: str = "train_ablation.jsonl"
+    heldout_file: str = "heldout.jsonl"
+    stats_file: str = "stats.json"
+    data_repo: str = "Juanillaberia/TinyForge"
+
+    # Training
+    base_checkpoint: str = "Juanillaberia/TinyForge-60M/base60m-pretrain/step_0009535.pt"
+    hub_model_repo: str = "Juanillaberia/TinyForge-60M-Instruct"
+    optimizer: str = "muon"
+    lr: float = 8e-4
+    weight_decay: float = 0.1
+    warmup_frac: float = 0.03
+    decay_frac: float = 0.97
+    micro_batch_size: int = 32
+    grad_accum_steps: int = 2
+    epochs: int = 3
+    eval_interval: int = 100
+    ignore_index: int = -100
