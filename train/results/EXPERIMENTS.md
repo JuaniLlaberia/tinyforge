@@ -145,3 +145,30 @@ Truncation is almost entirely `smol-magpie-ultra-short` (77% of its conversation
 Source mix of `train_main` matches the full train split to within ~1.5 points per source
 (`smol-magpie-ultra-short` 60.2% vs 58.8%). No held-out conversation overlaps train or the research
 prompts (hash of the rendered conversation).
+
+### SFT runs (`sft-50k` vs `sft-2k`)
+
+Question: does LIMA's small-data claim hold at 60M, i.e. is ~2k conversations enough?
+
+Same recipe for both (`train/sft.py`): base `step_0009535.pt`, chat-token rows initialized to the
+mean embedding, Muon + AdamW at peak 8e-4, 3% warmup then linear decay to 0, 64 conversations/step,
+3 epochs, loss on assistant tokens only. A100, ~102k tokens/sec (incl. padding), 20 GB peak memory.
+Held-out = the same 1,000 `test` conversations for both; base model held-out loss 2.4744.
+
+| Run | Conversations | Steps | Held-out after epoch 1 / 2 / 3 | Assistant tokens trained | Wall time |
+| --- | ------------- | ----- | ------------------------------ | ------------------------ | --------- |
+| `sft-50k` | 50,031 | 2,346 | 1.4382 / 1.3769 / **1.3753** | 74.3M | ~17 min |
+| `sft-2k`  | 2,031  | 96    | 1.9232 / 1.8476 / 1.8342 | 3.0M | ~1 min |
+
+- `sft-50k` beats `sft-2k` by **0.459 nats** on held-out loss, >6x the 0.072-nat seed-noise floor
+  from Experiment 0, so one run each is enough to call it.
+- Per update, the two runs are about equally efficient: `sft-2k` after 96 steps (1.834, data already
+  repeated 3x) is close to `sft-50k` at step 100 (1.775). Repetition didn't hurt; `sft-2k` simply
+  got ~24x fewer updates and was still improving when it stopped.
+- `sft-50k` plateaued: epoch 3 gained only 0.0016 nats over epoch 2. More epochs on the same 50k
+  wouldn't help; more data might.
+
+**Decision (held-out loss):** LIMA's small-data claim does not hold for held-out loss at 60M.
+`sft-50k` epoch 3 (`Juanillaberia/TinyForge-60M-Instruct/sft-50k/epoch_3.pt`) is the default
+`-Instruct` checkpoint, pending the behavioral comparison in the domain eval (held-out loss
+measures fit to smol-smoltalk-style answers, not answer quality).

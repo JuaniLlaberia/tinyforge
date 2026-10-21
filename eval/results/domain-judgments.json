@@ -1,0 +1,58 @@
+{
+  "_criteria": {
+    "on_topic": "y if the answer addresses the question or subject asked, regardless of correctness or repetition; n if it drifts, misreads the subject, or never attempts an answer",
+    "correct": "y if the core answer is right (code: the function itself works); n otherwise; '-' for writing prompts, which have no single right answer",
+    "status": "first-pass draft, to be reviewed"
+  },
+  "base": {
+    "general-01":   {"on_topic": "n", "correct": "n", "note": "never names Paris, drifts to US capitals"},
+    "general-02":   {"on_topic": "y", "correct": "n", "note": "says Earth, then the Moon"},
+    "general-03":   {"on_topic": "y", "correct": "y", "note": "'oxygen', then a boiling-point loop"},
+    "history-01":   {"on_topic": "y", "correct": "n", "note": "invented dates (49 BCE to 39 BCE)"},
+    "reasoning-01": {"on_topic": "y", "correct": "n", "note": "says 4pm"},
+    "reasoning-02": {"on_topic": "y", "correct": "n", "note": "says 'one'"},
+    "reasoning-03": {"on_topic": "y", "correct": "n", "note": "'a cat' (true but not the inference: an animal), then name babble"},
+    "code-01":      {"on_topic": "n", "correct": "n", "note": "'- Fibonacci(n):' loop, no code"},
+    "code-02":      {"on_topic": "n", "correct": "n", "note": "'the value of the value...' loop"},
+    "code-03":      {"on_topic": "n", "correct": "n", "note": "'a string that is a string...' loop"},
+    "writing-01":   {"on_topic": "y", "correct": "-", "note": "village description, then a loop"},
+    "writing-02":   {"on_topic": "y", "correct": "-", "note": "one sentence repeated"},
+    "writing-03":   {"on_topic": "y", "correct": "-", "note": "'make a hobby of your own' loop"},
+    "research-01":  {"on_topic": "n", "correct": "n", "note": "electrical transformer, not the ML model"},
+    "research-02":  {"on_topic": "y", "correct": "n", "note": "'learning of a set of skills' loop"}
+  },
+  "sft-2k": {
+    "general-01":   {"on_topic": "y", "correct": "y", "note": "Paris, then 'The capital of France is Paris' loop"},
+    "general-02":   {"on_topic": "y", "correct": "n", "note": "the Sun, then Earth"},
+    "general-03":   {"on_topic": "y", "correct": "n", "note": "'water and carbon dioxide'"},
+    "history-01":   {"on_topic": "y", "correct": "n", "note": "56 BCE, then a loop"},
+    "reasoning-01": {"on_topic": "y", "correct": "n", "note": "4pm, then a loop"},
+    "reasoning-02": {"on_topic": "n", "correct": "n", "note": "'a combination of two or more numbers' loop, no answer"},
+    "reasoning-03": {"on_topic": "n", "correct": "n", "note": "describes whiskers as a body part"},
+    "code-01":      {"on_topic": "y", "correct": "n", "note": "invalid function name, recursive nonsense"},
+    "code-02":      {"on_topic": "y", "correct": "n", "note": "find_finished, returns num"},
+    "code-03":      {"on_topic": "y", "correct": "n", "note": "calls undefined reversed_string, block repeated"},
+    "writing-01":   {"on_topic": "n", "correct": "-", "note": "'The village of the village of...' loop, no story"},
+    "writing-02":   {"on_topic": "y", "correct": "-", "note": "temperatures, then a loop"},
+    "writing-03":   {"on_topic": "y", "correct": "-", "note": "walking/relaxing, 'comfort zone' repeated"},
+    "research-01":  {"on_topic": "n", "correct": "n", "note": "electrical transformer"},
+    "research-02":  {"on_topic": "y", "correct": "n", "note": "vague 'given a set of tasks', repeated"}
+  },
+  "sft-50k": {
+    "general-01":   {"on_topic": "y", "correct": "y", "note": "Paris, stops; one duplicated landmark"},
+    "general-02":   {"on_topic": "y", "correct": "y", "note": "Jupiter (size claim wrong), stops"},
+    "general-03":   {"on_topic": "n", "correct": "n", "note": "water's role on Earth, never its composition"},
+    "history-01":   {"on_topic": "y", "correct": "n", "note": "4 BCE, Nero and Augustus, Council of Trent"},
+    "reasoning-01": {"on_topic": "y", "correct": "n", "note": "attempts a calculation, gets 3pm / 3 hours, stops"},
+    "reasoning-02": {"on_topic": "n", "correct": "n", "note": "'a fundamental concept' loop, no answer"},
+    "reasoning-03": {"on_topic": "n", "correct": "n", "note": "treats Whiskers as a cat species"},
+    "code-01":      {"on_topic": "y", "correct": "n", "note": "right structure, then returns n for each n"},
+    "code-02":      {"on_topic": "y", "correct": "n", "note": "writes a primality check, not an even check"},
+    "code-03":      {"on_topic": "y", "correct": "y", "note": "s[::-1], stops (usage example's printed output is wrong)"},
+    "writing-01":   {"on_topic": "y", "correct": "-", "note": "coherent story opening"},
+    "writing-02":   {"on_topic": "y", "correct": "-", "note": "weather paragraph, stops (22-23C doesn't match 70-80F)"},
+    "writing-03":   {"on_topic": "y", "correct": "-", "note": "suggests cards/golf, some repetition"},
+    "research-01":  {"on_topic": "n", "correct": "n", "note": "electrical transformer"},
+    "research-02":  {"on_topic": "y", "correct": "n", "note": "structured but confused definitions"}
+  }
+}

@@ -67,7 +67,7 @@ ablation (same recipe, less data); say so in the report.
 | `model/helper/sft_loader.py` | new | Loads the JSONL, tokenizes through `chat_template`, seeded per-epoch shuffle, length buckets, padding |
 | `train/sft.py` | new | Trainer: load base weights, chat-token init, masked loss, held-out eval, per-epoch checkpoints to `Juanillaberia/TinyForge-60M-Instruct/<run_name>/`, W&B, fixed chat samples |
 | `model/generate.py` | changed | `greedy_generate` takes prompt ids and a set of stop ids (259, 256); can return only the new tokens. The KV cache extends this same function later |
-| `model/domain_eval.py` | changed | `--chat`: uses `chat_prompt` + `encode_prompt`, stops at `<\|endofturn\|>`, `--max-new-tokens 128` |
+| `model/domain_eval.py` | changed | `--chat`: uses `chat_prompt` + `encode_prompt`, stops at `<\|endofturn\|>`, `--max-new-tokens 256` |
 | `eval/domain_prompts.json` | changed | `chat_prompt` added to each of the 15 items (same ids/categories) |
 | `eval/compare_domain.py` | new | Base-vs-SFT table and metrics from `domain-answers.jsonl` |
 | `train/push_to_hub.py` | new | Strips a training checkpoint to weights only and uploads it, with its model card, to the root of an HF model repo |
@@ -115,7 +115,7 @@ stopped:
 
 **Step 3 — Loader and trainer** (local CPU, 0 CU)
 
-- [ ] `model/helper/sft_loader.py`, `train/sft.py`
+- [x] `model/helper/sft_loader.py`, `train/sft.py`, `train/sft_gates.py` (static gates: `python -m train.sft_gates`)
 - Gates:
   - `xs` preset, random init, one repeated batch: masked loss goes to ~0.
   - Normalization check: a batch where every label is `-100` except one token gives exactly that
@@ -123,7 +123,9 @@ stopped:
   - After chat-token init, rows 257–259 equal the mean row. Held-out loss of the base model at
     step 0 is logged (the "before" number).
   - 20 steps of `base60m` on the real 2k file run end to end: held-out eval, checkpoint written,
-    checkpoint reloads through `load_model_for_eval`.
+    checkpoint reloads through `load_model_for_eval`. CPU training ran on ~1 core and was too slow
+    for this, so the A100 smoke run (Step 4) covered it instead: base held-out loss 2.47 → 1.92
+    after 50 steps, ~101k tokens/sec, checkpoint reloaded with the head still tied.
 
 **Step 4 — Runs** (A100, ~3.5 CU)
 
@@ -153,10 +155,11 @@ import wandb; wandb.login()
 # --resume-from Juanillaberia/TinyForge-60M-Instruct/sft-50k/epoch_1.pt
 ```
 
-- [ ] Smoke run, ~50 steps of `sft-50k`: measure tokens/sec and peak memory, confirm micro-batch 32
+- [x] Smoke run, ~50 steps of `sft-50k`: measure tokens/sec and peak memory, confirm micro-batch 32
       fits, re-estimate run time. (~0.5 CU)
-- [ ] `sft-50k`, 3 epochs. (~2.5 CU, re-estimated from the smoke run)
-- [ ] `sft-2k`, 3 epochs. (~0.5 CU)
+- [x] `sft-50k`, 3 epochs. (~2.5 CU, re-estimated from the smoke run) Held-out 1.4382 / 1.3769 /
+      1.3753; ~17 min.
+- [x] `sft-2k`, 3 epochs. (~0.5 CU) Held-out 1.9232 / 1.8476 / 1.8342; ~1 min.
 - Gates:
   - Held-out loss per epoch for both runs; each run keeps its best epoch.
   - The fixed chat samples in W&B are read by hand at every epoch. A broken mask or template shows
@@ -164,15 +167,27 @@ import wandb; wandb.login()
 
 **Step 5 — Evaluation** (mostly local, 0–3 CU)
 
-- [ ] Add `chat_prompt` to every item in `eval/domain_prompts.json`.
-- [ ] Domain eval, appended to `eval/results/domain-answers.jsonl`: tags `sft-50k` and `sft-2k`
-      (chat, greedy, 128 new tokens). Optional `sft-50k-raw`: original completion prompts, no
+```bash
+python -m model.domain_eval --checkpoint Juanillaberia/TinyForge-60M-Instruct/sft-2k/epoch_3.pt \
+    --preset base60m --tag sft-2k --chat --max-new-tokens 256
+python -m model.domain_eval --checkpoint Juanillaberia/TinyForge-60M-Instruct/sft-50k/epoch_3.pt \
+    --preset base60m --tag sft-50k --chat --max-new-tokens 256
+python -m eval.compare_domain   # -> eval/results/domain-comparison.md
+```
+
+On the Mac CPU without a KV cache, both models together took ~5 min (run in parallel; the second
+writes to its own `--output` file, appended afterwards).
+
+- [x] Add `chat_prompt` to every item in `eval/domain_prompts.json`.
+- [x] Domain eval, appended to `eval/results/domain-answers.jsonl`: tags `sft-50k` and `sft-2k`
+      (chat, greedy, 256 new tokens: smol-smoltalk answers are long, and 64-token training samples never reached a stop). Optional `sft-50k-raw`: original completion prompts, no
       template, to check plain completion survived SFT.
-- [ ] `eval/compare_domain.py` → table per prompt: base (completion prompt, 60 tokens) | `sft-2k` |
+- [x] `eval/compare_domain.py` → table per prompt: base (completion prompt, 60 tokens) | `sft-2k` |
       `sft-50k`, plus summary rows:
   - **Stop rate**: % of answers that end in `<|endofturn|>` within the token limit.
-  - **Repetition**: fraction of repeated 4-grams in the generated tokens only.
-  - **On-topic**: manual y/n per answer, regardless of correctness.
+  - **Repetition**: fraction of repeated 4-grams in the generated tokens only, on the first 60
+    tokens (comparable across the 60- and 256-token limits) and on the whole answer.
+  - [ ] **On-topic**: manual y/n per answer, regardless of correctness.
 - [ ] lm-eval HellaSwag + ARC-Easy on the chosen SFT checkpoint, to measure the alignment tax vs
       base. Run on the Mac CPU overnight (0 CU), or on the A100 (~2–3 CU) if time matters more.
 - [ ] Results into a "Post-training" section of `EXPERIMENTS.md` and a 2.d section of
