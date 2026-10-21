@@ -187,31 +187,38 @@ writes to its own `--output` file, appended afterwards).
   - **Stop rate**: % of answers that end in `<|endofturn|>` within the token limit.
   - **Repetition**: fraction of repeated 4-grams in the generated tokens only, on the first 60
     tokens (comparable across the 60- and 256-token limits) and on the whole answer.
-  - [ ] **On-topic**: manual y/n per answer, regardless of correctness.
-- [ ] lm-eval HellaSwag + ARC-Easy on the chosen SFT checkpoint, to measure the alignment tax vs
+  - [x] **On-topic** (manual y/n, regardless of correctness) and **correct** (12 factual/reasoning/code prompts): drafted in `eval/results/domain-judgments.json`, pending review.
+- [x] lm-eval HellaSwag + ARC-Easy on the chosen SFT checkpoint, to measure the alignment tax vs
       base. Run on the Mac CPU overnight (0 CU), or on the A100 (~2–3 CU) if time matters more.
-- [ ] Results into a "Post-training" section of `EXPERIMENTS.md` and a 2.d section of
+- [x] Results into a "Post-training" section of `EXPERIMENTS.md` and a 2.d section of
       `writeup.md`: data stats, held-out loss per epoch for both runs, the domain table, benchmarks,
       and which checkpoint ships as `-Instruct`. Default is `sft-50k`'s best epoch; if `sft-2k`
       matches or beats it, that's the finding and it ships instead.
 
 **Step 6 — Upload to the HF Hub** (Colab CPU runtime, 0 CU)
 
-- [ ] `train/push_to_hub.py`: loads the chosen SFT checkpoint (Hub ref or local path), drops
-      optimizer/scaler/RNG state, and writes a weights-only `tinyforge-60m-instruct.pt` (~260 MB).
+```bash
+python -m train.push_to_hub --checkpoint Juanillaberia/TinyForge-60M-Instruct/sft-50k/epoch_3.pt \
+    --run-name sft-50k            # --dry-run: write checkpoints/release/ only, no upload
+```
+
+- [x] `train/push_to_hub.py`: loads the chosen SFT checkpoint (Hub ref or local path), drops
+      optimizer/scaler/RNG state, and writes a weights-only `tinyforge-60m-instruct.pt` (259 MB).
       It keeps the `model_state_dict` key plus metadata (`preset`, `run_name`, `epoch`,
       `base_checkpoint`, chat format), then uploads it to the root of
       `Juanillaberia/TinyForge-60M-Instruct`.
-- [ ] `documentation/model_card_TinyForge-60M-Instruct.md`, pushed as the repo's `README.md`. Same
+- [x] `documentation/model_card_TinyForge-60M-Instruct.md`, pushed as the repo's `README.md`. Same
       structure as the base card: architecture (unchanged), base model link, SFT data and recipe,
       `sft-2k` vs `sft-50k`, base-vs-SFT table, benchmarks, chat format and a usage snippet,
       limitations.
 - Gates:
-  - In a fresh Colab session, load `Juanillaberia/TinyForge-60M-Instruct/tinyforge-60m-instruct.pt`
-    through `load_model_for_eval` and run the domain eval with `--chat`. Output must match the
-    Step 5 rows for the chosen checkpoint exactly (greedy).
-  - The model card's own usage snippet runs from a fresh clone.
-  - The repo stays private until you've reviewed the card; making it public is a manual step.
+  - [x] Load the release file through `load_model_for_eval` and run the domain eval with `--chat`:
+    15/15 answers identical to the Step 5 `sft-50k` rows (run locally on the Mac CPU, not Colab).
+  - [x] The model card's usage snippet, run from the repo root against the Hub copy, prints the
+    same Paris answer quoted in the card.
+  - [ ] The snippet from a **fresh clone**: the default branch `main` is still at `1dc0e01` and has
+    none of the SFT code (`chat_template.py`, `greedy_generate_ids`). Merge `dev` into `main` first.
+  - [ ] The repo stays private until you've reviewed the card; making it public is a manual step.
 
 | Step | Where | CU |
 |---|---|---|
