@@ -128,6 +128,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int, default=None, help="Cap examples per task, for a quick smoke run")
     parser.add_argument("--shards-path", type=str, default=str(TokenizerConfig.shards_path))
     parser.add_argument("--eval-batch-size", type=int, default=16, help="Batch size for the val-perplexity pass only")
+    parser.add_argument("--skip-perplexity", action="store_true",
+                        help="Benchmarks only; the val-perplexity pass needs every train shard on disk (DataLoader opens them all)")
     parser.add_argument("--output", type=str, required=True)
     return parser.parse_args()
 
@@ -139,9 +141,11 @@ def main() -> None:
     model = load_model_for_eval(args.checkpoint, args.preset, device)
     tokenizer = build_hf_tokenizer()
 
-    print("Computing val perplexity...")
-    perplexity_report = compute_val_perplexity(model, device, preset, Path(args.shards_path), args.eval_batch_size)
-    print(f"  val_loss={perplexity_report['val_loss']:.4f} val_perplexity={perplexity_report['val_perplexity']:.4f}")
+    perplexity_report = {}
+    if not args.skip_perplexity:
+        print("Computing val perplexity...")
+        perplexity_report = compute_val_perplexity(model, device, preset, Path(args.shards_path), args.eval_batch_size)
+        print(f"  val_loss={perplexity_report['val_loss']:.4f} val_perplexity={perplexity_report['val_perplexity']:.4f}")
 
     adapter = TinyForgeLM(model, tokenizer, device, preset.context_length, TokenizerConfig.eot_id)
     tasks = [t.strip() for t in args.tasks.split(",") if t.strip()]

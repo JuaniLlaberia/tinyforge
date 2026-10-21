@@ -1,0 +1,29 @@
+{
+  "lm_eval_results": {
+    "hellaswag": {
+      "name": "hellaswag",
+      "alias": "hellaswag",
+      "sample_len": 10042,
+      "acc,none": 0.28719378609838675,
+      "acc_stderr,none": 0.0045152809114691,
+      "acc_norm,none": 0.3088030272854013,
+      "acc_norm_stderr,none": 0.004610554974411628
+    },
+    "arc_easy": {
+      "name": "arc_easy",
+      "alias": "arc_easy",
+      "sample_len": 2376,
+      "acc,none": 0.43392255892255893,
+      "acc_stderr,none": 0.010169795770462075,
+      "acc_norm,none": 0.39436026936026936,
+      "acc_norm_stderr,none": 0.010028176038392816
+    }
+  },
+  "checkpoint": "Juanillaberia/TinyForge-60M-Instruct/sft-50k/epoch_3.pt",
+  "preset": "base60m",
+  "tasks": [
+    "hellaswag",
+    "arc_easy"
+  ],
+  "limit": null
+}
